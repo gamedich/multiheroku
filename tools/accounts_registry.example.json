@@ -1,0 +1,28 @@
+{
+  "accounts": [
+    {
+      "id": 123456789,
+      "tag": "service_account_1",
+      "session_file": "sessions/service.session",
+      "has_sim": true,
+      "status": "active",
+      "note": "Сервисный аккаунт #1"
+    }
+  ],
+  "pending_slots": [
+    {
+      "slot": 1,
+      "tag": "twink_1",
+      "has_sim": false,
+      "critical_no_sms": true,
+      "note": "Номер утерян! Требуется сохранение StringSession и блокировка logout"
+    },
+    {
+      "slot": 2,
+      "tag": "twink_2",
+      "has_sim": false,
+      "critical_no_sms": true,
+      "note": "Номер утерян! Требуется сохранение StringSession и блокировка logout"
+    }
+  ]
+}
