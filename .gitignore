@@ -190,3 +190,10 @@ tools/*.session*
 tools/accounts_registry.json
 SeeChat/
 auth_helper.py
+deno
+tools/clean_twinks_non_pms.py
+tools/deep_scan_modules.py
+tools/download_selected_modules.py
+tools/inspect_non_pms.py
+tools/scout_modules_twink.py
+
