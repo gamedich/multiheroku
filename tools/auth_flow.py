@@ -6,17 +6,18 @@ import shutil
 from herokutl import TelegramClient
 from herokutl.errors import SessionPasswordNeededError
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SESSIONS_DIR = os.path.join(BASE_DIR, "sessions")
+BACKUP_DIR = "/home/botuser/backups/sessions"
+AUTH_STATE_FILE = os.path.join(BASE_DIR, "tools", ".auth_state.json")
+REGISTRY_PATH = os.path.join(BASE_DIR, "tools", "accounts_registry.json")
+TEMP_SESSION = os.path.join(SESSIONS_DIR, "temp_auth_session")
+
 DEFAULT_API_ID = 14052957
 DEFAULT_API_HASH = 'ad8d7e59ecd6d4c8c2b6119952b8aec4'
-AUTH_STATE_FILE = '/home/botuser/heroku-userbot/tools/.auth_state.json'
-SESSIONS_DIR = '/home/botuser/heroku-userbot/sessions'
-BACKUP_DIR = '/home/botuser/backups/sessions'
-REGISTRY_PATH = '/home/botuser/heroku-userbot/tools/accounts_registry.json'
 
 os.makedirs(SESSIONS_DIR, exist_ok=True)
 os.makedirs(BACKUP_DIR, exist_ok=True)
-
-TEMP_SESSION = '/home/botuser/heroku-userbot/sessions/temp_auth_session'
 
 async def send_code(phone: str, api_id: int = None, api_hash: str = None):
     phone = phone.strip().replace(" ", "").replace("-", "")
@@ -26,7 +27,6 @@ async def send_code(phone: str, api_id: int = None, api_hash: str = None):
     api_id = int(api_id) if api_id else DEFAULT_API_ID
     api_hash = str(api_hash) if api_hash else DEFAULT_API_HASH
 
-    # Очищаем старую временную сессию если была
     for ext in ["", ".session", ".session-journal"]:
         p = f"{TEMP_SESSION}{ext}"
         if os.path.exists(p):
@@ -35,7 +35,7 @@ async def send_code(phone: str, api_id: int = None, api_hash: str = None):
             except Exception:
                 pass
 
-    print(f"[*] Отправка кода авторизации на номер {phone[:4]}***{phone[-2:]} через прокси (api_id={api_id})...")
+    print(f"[*] Отправка кода авторизации на номер {phone[:4]}***{phone[-2:]} через прокси (api_id={api_id})...", flush=True)
     client = TelegramClient(TEMP_SESSION, api_id, api_hash, proxy=('http', '127.0.0.1', 8889))
     await client.connect()
     try:
@@ -48,16 +48,16 @@ async def send_code(phone: str, api_id: int = None, api_hash: str = None):
         }
         with open(AUTH_STATE_FILE, 'w', encoding='utf-8') as f:
             json.dump(state, f)
-        print(f"[+] Код успешно отправлен! Проверь приложение Telegram (или СМС).")
-        print(f"[*] phone_code_hash получен.")
+        print(f"[+] Код успешно отправлен! Проверь приложение Telegram (или СМС).", flush=True)
+        print(f"[*] phone_code_hash получен.", flush=True)
     except Exception as e:
-        print(f"[!] Ошибка отправки кода: {e}")
+        print(f"[!] Ошибка отправки кода: {e}", flush=True)
     finally:
         await client.disconnect()
 
 async def sign_in(code: str, password: str = None, tag: str = "main_account", note: str = "Основной аккаунт"):
     if not os.path.exists(AUTH_STATE_FILE):
-        print("[!] Ошибка: Нет активного запроса авторизации. Сначала вызови send_code.")
+        print("[!] Ошибка: Нет активного запроса авторизации. Сначала вызови send_code.", flush=True)
         return
 
     with open(AUTH_STATE_FILE, 'r', encoding='utf-8') as f:
@@ -69,16 +69,18 @@ async def sign_in(code: str, password: str = None, tag: str = "main_account", no
     phone_code_hash = state["phone_code_hash"]
     code = str(code).strip()
 
+    print(f"[*] Подключение к Telegram для входа {phone[:4]}***{phone[-2:]}...", flush=True)
     client = TelegramClient(TEMP_SESSION, api_id, api_hash, proxy=('http', '127.0.0.1', 8889))
     await client.connect()
     try:
         try:
+            print(f"[*] Проверка кода подтверждения...", flush=True)
             await client.sign_in(phone=phone, code=code, phone_code_hash=phone_code_hash)
         except SessionPasswordNeededError:
             if not password:
-                print("[!] ТРЕБУЕТСЯ 2FA ПАРОЛЬ (Облачный пароль)!")
-                print("[*] Передай пароль аргументом для завершения входа.")
+                print("[!] ТРЕБУЕТСЯ 2FA ПАРОЛЬ (Облачный пароль)!", flush=True)
                 return
+            print(f"[*] Ввод 2FA пароля...", flush=True)
             await client.sign_in(password=password)
 
         me = await client.get_me()
@@ -87,10 +89,10 @@ async def sign_in(code: str, password: str = None, tag: str = "main_account", no
         last_name = me.last_name or ""
         username = me.username or "без юзернейма"
 
-        print(f"[+] ВХОД УСПЕШЕН!")
-        print(f"    - ID: {user_id}")
-        print(f"    - Имя: {first_name} {last_name}")
-        print(f"    - Юзернейм: @{username}")
+        print(f"[+] ВХОД УСПЕШЕН!", flush=True)
+        print(f"    - ID: {user_id}", flush=True)
+        print(f"    - Имя: {first_name} {last_name}", flush=True)
+        print(f"    - Юзернейм: @{username}", flush=True)
 
         final_session_name = f"account_{user_id}.session"
         final_session_path = os.path.join(SESSIONS_DIR, final_session_name)
@@ -100,8 +102,8 @@ async def sign_in(code: str, password: str = None, tag: str = "main_account", no
             shutil.copy2(temp_file, final_session_path)
             backup_file = os.path.join(BACKUP_DIR, f"{user_id}_{tag}.session")
             shutil.copy2(temp_file, backup_file)
-            print(f"[+] Сессия сохранена: {final_session_path}")
-            print(f"[+] Резервная копия создана: {backup_file}")
+            print(f"[+] Сессия сохранена: {final_session_path}", flush=True)
+            print(f"[+] Резервная копия создана: {backup_file}", flush=True)
             try:
                 os.remove(temp_file)
             except Exception:
@@ -146,10 +148,10 @@ async def sign_in(code: str, password: str = None, tag: str = "main_account", no
         with open(REGISTRY_PATH, 'w', encoding='utf-8') as f:
             json.dump(registry, f, indent=2, ensure_ascii=False)
 
-        print(f"[+] Аккаунт добавлен в реестр: {REGISTRY_PATH}")
+        print(f"[+] Аккаунт добавлен в реестр: {REGISTRY_PATH}", flush=True)
 
     except Exception as e:
-        print(f"[!] Ошибка авторизации: {e}")
+        print(f"[!] Ошибка авторизации: {e}", flush=True)
     finally:
         await client.disconnect()
 

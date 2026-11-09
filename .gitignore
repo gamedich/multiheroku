@@ -188,3 +188,5 @@ tools/reports/
 tools/.auth_state.json
 tools/*.session*
 tools/accounts_registry.json
+SeeChat/
+auth_helper.py
