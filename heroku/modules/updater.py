@@ -317,10 +317,10 @@ class UpdaterMod(loader.Module):
     @loader.callback_handler()
     async def update_call(self, call: InlineCall):
         """Process update buttons clicks"""
+        if call.data not in {"heroku/update", "heroku/ignore_upd"}:
+            return
         if NO_GIT:
             await call.answer("Git disabled via --no-git.", show_alert=True)
-            return
-        if call.data not in {"heroku/update", "heroku/ignore_upd"}:
             return
 
         if call.data == "heroku/ignore_upd":
